@@ -114,7 +114,7 @@ const PublicDashboard = () => {
         </button>
 
         <RatingForm
-          awardId={selectedTender.tender_id} // Using tender_id as award lookup
+          awardId={selectedTender.award_id}
           tenderTitle={selectedTender.title}
           onSubmit={handleSubmitRating}
           onCancel={() => setView("transparency")}

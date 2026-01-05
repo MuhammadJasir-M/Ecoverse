@@ -187,3 +187,4 @@ def logout():
     """Logout endpoint (client should discard token)"""
     return {"message": "Logged out successfully"}
 
+

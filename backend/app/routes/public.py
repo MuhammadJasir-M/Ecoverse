@@ -24,6 +24,7 @@ def get_awarded_tenders(db: Session = Depends(get_db)):
             
             results.append({
                 "tender_id": tender.id,
+                "award_id": award.id,
                 "title": tender.title,
                 "category": tender.category,
                 "budget": tender.budget,
