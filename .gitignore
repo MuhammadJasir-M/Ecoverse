@@ -1,0 +1,98 @@
+############################
+# ENVIRONMENT & SECRETS
+############################
+.env
+.env.*
+!.env.example
+
+############################
+# DOCKER
+############################
+docker-compose.override.yml
+**/.dockerignore
+
+############################
+# PYTHON (FASTAPI / AI)
+############################
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+ENV/
+pip-wheel-metadata/
+.pytest_cache/
+.mypy_cache/
+coverage/
+htmlcov/
+
+############################
+# NODE / REACT / HARDHAT
+############################
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+############################
+# FRONTEND BUILD OUTPUT
+############################
+frontend/dist/
+frontend/.vite/
+
+############################
+# HARDHAT / BLOCKCHAIN
+############################
+blockchain/artifacts/
+blockchain/cache/
+blockchain/typechain/
+blockchain/coverage/
+blockchain/.env
+blockchain/.openzeppelin/
+
+############################
+# DATABASE
+############################
+*.sqlite3
+*.db
+db/data/
+postgres-data/
+
+############################
+# LOGS
+############################
+logs/
+*.log
+
+############################
+# OS FILES
+############################
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+############################
+# EDITORS & IDEs
+############################
+.vscode/
+.idea/
+*.swp
+*.swo
+
+############################
+# TEST & TEMP FILES
+############################
+tmp/
+temp/
+*.tmp
+
+############################
+# DOCUMENTATION BUILD
+############################
+docs/_build/
