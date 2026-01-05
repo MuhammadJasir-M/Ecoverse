@@ -55,7 +55,7 @@ if not exist ".env" (
 )
 
 echo Step 1/5: Stopping any existing containers...
-docker-compose down -v 2>nul
+docker-compose down 2>nul
 echo.
 
 echo Step 2/5: Building Docker images...

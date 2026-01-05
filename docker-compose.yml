@@ -40,6 +40,8 @@ services:
     container_name: procurement_blockchain
     ports:
       - "8545:8545"
+    volumes:
+      - blockchain_data:/root/.hardhat
     command: npx hardhat node
 
   frontend:
@@ -58,3 +60,4 @@ services:
 
 volumes:
   postgres_data:
+  blockchain_data:
