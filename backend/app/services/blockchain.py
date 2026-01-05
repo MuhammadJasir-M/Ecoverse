@@ -100,10 +100,13 @@ class BlockchainService:
             bid_count = self.contract.functions.getBidCount(tender_id).call()
             award_log = self.contract.functions.getAwardLog(tender_id).call()
             
+            # Convert bytes to hex strings for JSON serialization
+            tender_hash = tender_log[1].hex() if isinstance(tender_log[1], bytes) else tender_log[1]
+            
             return {
                 "tender_verified": tender_log[0] > 0,
                 "tender_timestamp": tender_log[0],
-                "tender_hash": tender_log[1],
+                "tender_hash": tender_hash,
                 "total_bids": bid_count,
                 "award_verified": award_log[0] > 0,
                 "award_timestamp": award_log[0],
