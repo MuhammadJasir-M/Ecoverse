@@ -40,6 +40,14 @@ class Tender(Base):
     bids = relationship("Bid", back_populates="tender", cascade="all, delete-orphan")
     award = relationship("Award", back_populates="tender", uselist=False)
 
+class GovernmentAccount(Base):
+    __tablename__ = "government_accounts"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    access_code_hash = Column(String(255), nullable=False, unique=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_login = Column(DateTime, nullable=True)
+
 class Vendor(Base):
     __tablename__ = "vendors"
     
@@ -50,6 +58,10 @@ class Vendor(Base):
     phone = Column(String(20))
     address = Column(Text)
     
+    # Authentication
+    password_hash = Column(String(255), nullable=True)  # Nullable for backward compatibility
+    vendor_id = Column(String(100), unique=True, nullable=True, index=True)  # Login ID
+    
     # Reputation metrics
     reputation_score = Column(Float, default=0.0)
     completed_projects = Column(Integer, default=0)
@@ -57,6 +69,7 @@ class Vendor(Base):
     average_rating = Column(Float, default=0.0)
     
     created_at = Column(DateTime, default=datetime.utcnow)
+    last_login = Column(DateTime, nullable=True)
     
     bids = relationship("Bid", back_populates="vendor")
 

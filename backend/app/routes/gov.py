@@ -8,6 +8,7 @@ from app.schemas.award import AwardCreate, AwardResponse
 from app.services.hash_utils import generate_tender_hash, generate_award_hash
 from app.services.blockchain import BlockchainService
 from app.services.ai_engine import AIEngine
+from app.services.auth import require_government
 from datetime import datetime
 
 router = APIRouter(prefix="/gov", tags=["Government"])
@@ -15,7 +16,11 @@ router = APIRouter(prefix="/gov", tags=["Government"])
 blockchain_service = BlockchainService()
 
 @router.post("/tenders", response_model=TenderResponse)
-def create_tender(tender: TenderCreate, db: Session = Depends(get_db)):
+def create_tender(
+    tender: TenderCreate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_government)
+):
     """Government creates a new tender"""
     
     # Generate hash
@@ -43,12 +48,19 @@ def create_tender(tender: TenderCreate, db: Session = Depends(get_db)):
     return db_tender
 
 @router.get("/tenders", response_model=List[TenderResponse])
-def list_tenders(db: Session = Depends(get_db)):
+def list_tenders(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_government)
+):
     """List all tenders"""
     return db.query(Tender).all()
 
 @router.get("/tenders/{tender_id}/bids")
-def get_tender_bids(tender_id: int, db: Session = Depends(get_db)):
+def get_tender_bids(
+    tender_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_government)
+):
     """Get all bids for a tender with details"""
     tender = db.query(Tender).filter(Tender.id == tender_id).first()
     if not tender:
@@ -73,7 +85,11 @@ def get_tender_bids(tender_id: int, db: Session = Depends(get_db)):
     return results
 
 @router.post("/tenders/{tender_id}/close")
-def close_tender(tender_id: int, db: Session = Depends(get_db)):
+def close_tender(
+    tender_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_government)
+):
     """Close bidding for a tender"""
     tender = db.query(Tender).filter(Tender.id == tender_id).first()
     if not tender:
@@ -85,7 +101,11 @@ def close_tender(tender_id: int, db: Session = Depends(get_db)):
     return {"message": "Tender closed successfully"}
 
 @router.get("/tenders/{tender_id}/recommendations")
-def get_ai_recommendations(tender_id: int, db: Session = Depends(get_db)):
+def get_ai_recommendations(
+    tender_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_government)
+):
     """Get AI-powered bid recommendations"""
     tender = db.query(Tender).filter(Tender.id == tender_id).first()
     if not tender:
@@ -118,7 +138,11 @@ def get_ai_recommendations(tender_id: int, db: Session = Depends(get_db)):
     return {"recommendations": recommendations, "total_bids": len(bids)}
 
 @router.post("/awards", response_model=AwardResponse)
-def create_award(award: AwardCreate, db: Session = Depends(get_db)):
+def create_award(
+    award: AwardCreate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_government)
+):
     """Award tender to winning bid"""
     
     # Validate tender and bid

@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { Plus, RefreshCw, Award, FileText, AlertCircle } from "lucide-react";
+import { Plus, RefreshCw, Award, FileText, AlertCircle, LogOut, Building2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import TenderForm from "../components/TenderForm";
 import AIRecommendationTable from "../components/AIRecommendationTable";
 import { govAPI } from "../services/api";
 
 const GovDashboard = () => {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [view, setView] = useState("list"); // list, create, recommendations, award
   const [tenders, setTenders] = useState([]);
   const [selectedTender, setSelectedTender] = useState(null);
@@ -17,6 +21,13 @@ const GovDashboard = () => {
     contract_start: "",
     contract_end: "",
   });
+
+  const handleLogout = () => {
+    if (confirm("Are you sure you want to logout?")) {
+      logout();
+      navigate("/");
+    }
+  };
 
   useEffect(() => {
     loadTenders();
@@ -315,27 +326,49 @@ const GovDashboard = () => {
   // Default: Tender List
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">
-          Government Dashboard
-        </h1>
-        <div className="flex space-x-3">
-          <button
-            onClick={loadTenders}
-            className="btn-secondary flex items-center"
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh
-          </button>
-          <button
-            onClick={() => setView("create")}
-            className="btn-primary flex items-center"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Tender
-          </button>
+      {/* Header */}
+      <header className="bg-white shadow-md border-b border-gray-200 mb-6">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg">
+                <Building2 className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800">
+                  Government Dashboard
+                </h1>
+                <p className="text-xs text-gray-500 font-medium">
+                  Tender Management & Award Decisions
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={loadTenders}
+                className="btn-secondary flex items-center"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh
+              </button>
+              <button
+                onClick={() => setView("create")}
+                className="btn-primary flex items-center"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Tender
+              </button>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 flex items-center transition-colors"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">

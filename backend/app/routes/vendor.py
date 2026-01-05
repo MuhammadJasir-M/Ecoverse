@@ -8,6 +8,7 @@ from app.schemas.bid import BidCreate, BidResponse
 from app.schemas.tender import TenderResponse
 from app.services.hash_utils import generate_bid_hash
 from app.services.blockchain import BlockchainService
+from app.services.auth import require_vendor, get_password_hash
 
 router = APIRouter(prefix="/vendor", tags=["Vendor"])
 
@@ -22,7 +23,7 @@ def register_vendor(
     address: str = None,
     db: Session = Depends(get_db)
 ):
-    """Register a new vendor"""
+    """Register a new vendor (legacy endpoint - use /auth/vendor/register for new registrations)"""
     
     # Check if vendor exists
     existing = db.query(Vendor).filter(Vendor.email == email).first()
@@ -41,10 +42,13 @@ def register_vendor(
     db.commit()
     db.refresh(vendor)
     
-    return {"id": vendor.id, "name": vendor.name, "message": "Vendor registered successfully"}
+    return {"id": vendor.id, "name": vendor.name, "message": "Vendor registered successfully. Please set up authentication via /auth/vendor/register"}
 
 @router.get("/tenders/open", response_model=List[TenderResponse])
-def get_open_tenders(db: Session = Depends(get_db)):
+def get_open_tenders(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_vendor)
+):
     """Get all open tenders"""
     return db.query(Tender).filter(
         Tender.status == TenderStatus.OPEN,
@@ -52,7 +56,11 @@ def get_open_tenders(db: Session = Depends(get_db)):
     ).all()
 
 @router.post("/bids", response_model=BidResponse)
-def submit_bid(bid: BidCreate, db: Session = Depends(get_db)):
+def submit_bid(
+    bid: BidCreate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_vendor)
+):
     """Submit a bid for a tender"""
     
     # Validate tender
@@ -66,10 +74,14 @@ def submit_bid(bid: BidCreate, db: Session = Depends(get_db)):
     if tender.deadline < datetime.utcnow():
         raise HTTPException(status_code=400, detail="Tender deadline has passed")
     
-    # Validate vendor
+    # Validate vendor and ensure they match the authenticated user
     vendor = db.query(Vendor).filter(Vendor.id == bid.vendor_id).first()
     if not vendor:
         raise HTTPException(status_code=404, detail="Vendor not found")
+    
+    # Ensure vendor can only submit bids for themselves
+    if current_user["id"] != bid.vendor_id:
+        raise HTTPException(status_code=403, detail="You can only submit bids for your own account")
     
     # Check for duplicate bid
     existing_bid = db.query(Bid).filter(
@@ -107,8 +119,16 @@ def submit_bid(bid: BidCreate, db: Session = Depends(get_db)):
     return db_bid
 
 @router.get("/bids/{vendor_id}")
-def get_vendor_bids(vendor_id: int, db: Session = Depends(get_db)):
+def get_vendor_bids(
+    vendor_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_vendor)
+):
     """Get all bids submitted by a vendor"""
+    # Ensure vendor can only see their own bids
+    if current_user["id"] != vendor_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
     bids = db.query(Bid).filter(Bid.vendor_id == vendor_id).all()
     
     results = []

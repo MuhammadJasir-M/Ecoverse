@@ -1,34 +1,33 @@
 import React, { useState, useEffect } from "react";
-import { UserPlus, FileText, RefreshCw, TrendingUp, Clock } from "lucide-react";
+import {
+  UserPlus,
+  FileText,
+  RefreshCw,
+  TrendingUp,
+  Clock,
+  LogOut,
+  Users,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 import BidForm from "../components/BidForm";
 import { vendorAPI } from "../services/api";
 
 const VendorDashboard = () => {
-  const [view, setView] = useState("register"); // register, tenders, submit-bid, my-bids
-  const [vendor, setVendor] = useState(null);
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const [view, setView] = useState("tenders"); // tenders, submit-bid, my-bids
   const [openTenders, setOpenTenders] = useState([]);
   const [myBids, setMyBids] = useState([]);
   const [selectedTender, setSelectedTender] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const [registerForm, setRegisterForm] = useState({
-    name: "",
-    email: "",
-    company_registration: "",
-    phone: "",
-    address: "",
-  });
-
   useEffect(() => {
-    const savedVendor = localStorage.getItem("vendor");
-    if (savedVendor) {
-      const vendorData = JSON.parse(savedVendor);
-      setVendor(vendorData);
-      setView("tenders");
+    if (user && user.role === "vendor") {
       loadOpenTenders();
-      loadMyBids(vendorData.id);
+      loadMyBids(user.user_id);
     }
-  }, []);
+  }, [user]);
 
   const loadOpenTenders = async () => {
     try {
@@ -48,51 +47,14 @@ const VendorDashboard = () => {
     }
   };
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
-
-    if (
-      !registerForm.name ||
-      !registerForm.email ||
-      !registerForm.company_registration
-    ) {
-      alert("Please fill all required fields");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await vendorAPI.register(registerForm);
-
-      const vendorData = {
-        id: response.data.id,
-        name: registerForm.name,
-        email: registerForm.email,
-      };
-
-      setVendor(vendorData);
-      localStorage.setItem("vendor", JSON.stringify(vendorData));
-
-      alert("✅ Vendor registered successfully!");
-      setView("tenders");
-      loadOpenTenders();
-    } catch (error) {
-      if (error.response?.status === 400) {
-        alert("❌ Vendor with this email already exists");
-      } else {
-        alert("❌ Registration failed: " + error.message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSubmitBid = async (bidData) => {
     try {
       await vendorAPI.submitBid(bidData);
       alert("✅ Bid submitted and logged on blockchain!");
       setView("my-bids");
-      loadMyBids(vendor.id);
+      if (user) {
+        loadMyBids(user.user_id);
+      }
       loadOpenTenders();
     } catch (error) {
       if (error.response?.status === 400) {
@@ -105,125 +67,13 @@ const VendorDashboard = () => {
 
   const handleLogout = () => {
     if (confirm("Are you sure you want to logout?")) {
-      localStorage.removeItem("vendor");
-      setVendor(null);
-      setView("register");
-      setOpenTenders([]);
-      setMyBids([]);
+      logout();
+      navigate("/");
     }
   };
 
-  // Registration View
-  if (view === "register" && !vendor) {
-    return (
-      <div className="max-w-2xl mx-auto">
-        <div className="card">
-          <div className="text-center mb-6">
-            <UserPlus className="w-16 h-16 mx-auto text-primary-600 mb-4" />
-            <h2 className="text-3xl font-bold text-gray-800">
-              Vendor Registration
-            </h2>
-            <p className="text-gray-600 mt-2">
-              Register your company to participate in government tenders
-            </p>
-          </div>
-
-          <form onSubmit={handleRegister} className="space-y-4">
-            <div>
-              <label className="label">Company Name *</label>
-              <input
-                type="text"
-                value={registerForm.name}
-                onChange={(e) =>
-                  setRegisterForm((prev) => ({ ...prev, name: e.target.value }))
-                }
-                className="input"
-                placeholder="ABC Construction Pvt Ltd"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="label">Email *</label>
-              <input
-                type="email"
-                value={registerForm.email}
-                onChange={(e) =>
-                  setRegisterForm((prev) => ({
-                    ...prev,
-                    email: e.target.value,
-                  }))
-                }
-                className="input"
-                placeholder="contact@abcconstruction.com"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="label">Company Registration Number *</label>
-              <input
-                type="text"
-                value={registerForm.company_registration}
-                onChange={(e) =>
-                  setRegisterForm((prev) => ({
-                    ...prev,
-                    company_registration: e.target.value,
-                  }))
-                }
-                className="input"
-                placeholder="U12345TN2020PTC123456"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="label">Phone Number</label>
-              <input
-                type="tel"
-                value={registerForm.phone}
-                onChange={(e) =>
-                  setRegisterForm((prev) => ({
-                    ...prev,
-                    phone: e.target.value,
-                  }))
-                }
-                className="input"
-                placeholder="+91 98765 43210"
-              />
-            </div>
-
-            <div>
-              <label className="label">Business Address</label>
-              <textarea
-                value={registerForm.address}
-                onChange={(e) =>
-                  setRegisterForm((prev) => ({
-                    ...prev,
-                    address: e.target.value,
-                  }))
-                }
-                rows="3"
-                className="input"
-                placeholder="123, Industrial Area, Chennai - 600001"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full disabled:opacity-50"
-            >
-              {loading ? "Registering..." : "Register as Vendor"}
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
   // Submit Bid View
-  if (view === "submit-bid" && selectedTender) {
+  if (view === "submit-bid" && selectedTender && user) {
     return (
       <div>
         <button
@@ -234,7 +84,7 @@ const VendorDashboard = () => {
         </button>
         <BidForm
           tender={selectedTender}
-          vendorId={vendor.id}
+          vendorId={user.user_id}
           onSubmit={handleSubmitBid}
           onCancel={() => setView("tenders")}
         />
@@ -243,14 +93,14 @@ const VendorDashboard = () => {
   }
 
   // My Bids View
-  if (view === "my-bids") {
+  if (view === "my-bids" && user) {
     return (
       <div>
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800">My Bids</h1>
           <div className="flex space-x-3">
             <button
-              onClick={() => loadMyBids(vendor.id)}
+              onClick={() => loadMyBids(user.user_id)}
               className="btn-secondary flex items-center"
             >
               <RefreshCw className="w-4 h-4 mr-2" />
@@ -344,36 +194,61 @@ const VendorDashboard = () => {
   }
 
   // Default: Open Tenders View
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">Vendor Dashboard</h1>
-          <p className="text-gray-600 mt-1">Welcome, {vendor?.name}</p>
-        </div>
-        <div className="flex space-x-3">
-          <button
-            onClick={() => setView("my-bids")}
-            className="btn-secondary flex items-center"
-          >
-            <FileText className="w-4 h-4 mr-2" />
-            My Bids
-          </button>
-          <button
-            onClick={loadOpenTenders}
-            className="btn-secondary flex items-center"
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh
-          </button>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
-          >
-            Logout
-          </button>
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Loading...</p>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <header className="bg-white shadow-md border-b border-gray-200 mb-6">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-green-700 rounded-xl flex items-center justify-center shadow-lg">
+                <Users className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800">
+                  Vendor Dashboard
+                </h1>
+                <p className="text-xs text-gray-500 font-medium">
+                  Welcome, {user.name || user.vendor_id}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setView("my-bids")}
+                className="btn-secondary flex items-center"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                My Bids
+              </button>
+              <button
+                onClick={loadOpenTenders}
+                className="btn-secondary flex items-center"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Refresh
+              </button>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 flex items-center transition-colors"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -473,7 +348,7 @@ const VendorDashboard = () => {
                         <span className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium">
                           ✓ Bid Submitted
                         </span>
-                      ) : (
+                      ) : user ? (
                         <button
                           onClick={() => {
                             setSelectedTender(tender);
@@ -483,7 +358,7 @@ const VendorDashboard = () => {
                         >
                           Submit Bid
                         </button>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 </div>

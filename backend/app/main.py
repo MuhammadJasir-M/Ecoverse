@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.session import engine, Base
-from app.routes import gov, vendor, public
+from app.routes import gov, vendor, public, auth
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -22,6 +22,7 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(auth.router)
 app.include_router(gov.router)
 app.include_router(vendor.router)
 app.include_router(public.router)

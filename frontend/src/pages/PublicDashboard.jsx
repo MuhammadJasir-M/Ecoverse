@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Eye, Search, RefreshCw, Star, Shield } from "lucide-react";
+import { Eye, Search, RefreshCw, Star, Shield, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import TransparencyTable from "../components/TransparencyTable";
 import RatingForm from "../components/RatingForm";
 import { publicAPI } from "../services/api";
 
 const PublicDashboard = () => {
+  const navigate = useNavigate();
   const [view, setView] = useState("list"); // list, transparency, rate
   const [awardedTenders, setAwardedTenders] = useState([]);
   const [selectedTender, setSelectedTender] = useState(null);
@@ -124,14 +126,24 @@ const PublicDashboard = () => {
   // Default: Awarded Tenders List
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
-          Public Transparency Portal
-        </h1>
-        <p className="text-gray-600">
-          View awarded government tenders, verify blockchain records, and
-          provide citizen feedback
-        </p>
+      {/* Header with Back Button */}
+      <div className="mb-6 flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            Public Transparency Portal
+          </h1>
+          <p className="text-gray-600">
+            View awarded government tenders, verify blockchain records, and
+            provide citizen feedback
+          </p>
+        </div>
+        <button
+          onClick={() => navigate("/")}
+          className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Role Selection
+        </button>
       </div>
 
       {/* Stats */}

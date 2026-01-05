@@ -10,9 +10,15 @@ const api = axios.create({
   timeout: 30000, // 30 second timeout
 });
 
-// Request interceptor for debugging
+// Request interceptor for adding auth token
 api.interceptors.request.use(
   (config) => {
+    // Add auth token if available
+    const token = localStorage.getItem("auth_token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
     console.log(
       `🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`
     );
@@ -32,6 +38,16 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response) {
+      // Handle 401 Unauthorized - clear auth and redirect
+      if (error.response.status === 401) {
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("user_data");
+        // Redirect to role selection if not already there
+        if (window.location.pathname !== "/" && !window.location.pathname.includes("/login") && !window.location.pathname.includes("/register")) {
+          window.location.href = "/";
+        }
+      }
+      
       console.error(
         "❌ API Error Response:",
         error.response.status,
@@ -128,6 +144,24 @@ export const blockchainAPI = {
 
   // Get transaction details
   getTransaction: (txHash) => api.get(`/blockchain/transaction/${txHash}`),
+};
+
+// ==================== AUTHENTICATION APIs ====================
+export const authAPI = {
+  // Government login
+  governmentLogin: (accessCode) => api.post("/auth/government/login", { access_code: accessCode }),
+  
+  // Vendor login
+  vendorLogin: (vendorId, password) => api.post("/auth/vendor/login", { vendor_id: vendorId, password }),
+  
+  // Vendor register
+  vendorRegister: (data) => api.post("/auth/vendor/register", data),
+  
+  // Get current user
+  getCurrentUser: () => api.get("/auth/me"),
+  
+  // Logout
+  logout: () => api.post("/auth/logout"),
 };
 
 // ==================== HEALTH CHECK ====================
