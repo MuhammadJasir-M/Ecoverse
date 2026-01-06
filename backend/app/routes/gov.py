@@ -107,35 +107,72 @@ def get_ai_recommendations(
     current_user: dict = Depends(require_government)
 ):
     """Get AI-powered bid recommendations"""
-    tender = db.query(Tender).filter(Tender.id == tender_id).first()
-    if not tender:
-        raise HTTPException(status_code=404, detail="Tender not found")
-    
-    bids = db.query(Bid).filter(Bid.tender_id == tender_id).all()
-    if not bids:
-        return {"recommendations": [], "message": "No bids submitted yet"}
-    
-    # Get vendors
-    vendor_ids = [bid.vendor_id for bid in bids]
-    vendors = db.query(Vendor).filter(Vendor.id.in_(vendor_ids)).all()
-    vendor_dict = {v.id: v for v in vendors}
-    
-    # Get AI recommendations
-    recommendations = AIEngine.get_recommendations(tender_id, bids, vendor_dict, tender)
-    
-    # Update bid scores in database
-    for rec in recommendations:
-        bid = next(b for b in bids if b.id == rec["bid_id"])
-        bid.ai_score = rec["ai_score"]
-        bid.price_score = rec["price_score"]
-        bid.vendor_score = rec["vendor_score"]
-        bid.technical_score = rec["technical_score"]
-        bid.anomaly_flag = rec["anomaly_flag"]
-        bid.anomaly_reason = rec["anomaly_reason"]
-    
-    db.commit()
-    
-    return {"recommendations": recommendations, "total_bids": len(bids)}
+    try:
+        tender = db.query(Tender).filter(Tender.id == tender_id).first()
+        if not tender:
+            raise HTTPException(status_code=404, detail="Tender not found")
+        
+        bids = db.query(Bid).filter(Bid.tender_id == tender_id).all()
+        if not bids:
+            return {
+                "recommendations": [], 
+                "message": "No bids submitted yet",
+                "total_bids": 0
+            }
+        
+        # Get vendors
+        vendor_ids = [bid.vendor_id for bid in bids]
+        vendors = db.query(Vendor).filter(Vendor.id.in_(vendor_ids)).all()
+        vendor_dict = {v.id: v for v in vendors}
+        
+        # Validate all bids have corresponding vendors
+        missing_vendors = [bid.vendor_id for bid in bids if bid.vendor_id not in vendor_dict]
+        if missing_vendors:
+            print(f"Warning: Missing vendors for IDs: {missing_vendors}")
+        
+        # Get AI recommendations
+        recommendations = AIEngine.get_recommendations(tender_id, bids, vendor_dict, tender)
+        
+        if not recommendations:
+            return {
+                "recommendations": [],
+                "message": "Unable to generate recommendations. Please check bid data.",
+                "total_bids": len(bids)
+            }
+        
+        # Update bid scores in database
+        for rec in recommendations:
+            try:
+                bid = next((b for b in bids if b.id == rec["bid_id"]), None)
+                if bid:
+                    bid.ai_score = rec["ai_score"]
+                    bid.price_score = rec["price_score"]
+                    bid.vendor_score = rec["vendor_score"]
+                    bid.technical_score = rec["technical_score"]
+                    bid.anomaly_flag = rec["anomaly_flag"]
+                    bid.anomaly_reason = rec["anomaly_reason"]
+            except Exception as e:
+                print(f"Error updating bid {rec.get('bid_id')}: {e}")
+                continue
+        
+        db.commit()
+        
+        return {
+            "recommendations": recommendations, 
+            "total_bids": len(bids),
+            "message": "Recommendations generated successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error in get_ai_recommendations: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to generate recommendations: {str(e)}"
+        )
 
 @router.post("/awards", response_model=AwardResponse)
 def create_award(

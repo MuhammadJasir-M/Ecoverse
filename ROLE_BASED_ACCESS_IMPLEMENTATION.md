@@ -77,8 +77,8 @@ All existing routes have been updated to require authentication:
 Before the government portal can be used, you must initialize the government account with an access code:
 
 ```bash
-cd backend
-python -m app.scripts.init_government_account YOUR_ACCESS_CODE
+docker compose exec backend python -m app.scripts.init_government_account admin123
+
 ```
 
 Or using environment variable:
